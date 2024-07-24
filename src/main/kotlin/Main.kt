@@ -1,6 +1,29 @@
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import java.lang.Exception
 import java.util.Scanner
 
-fun main(args: Array<String>) {
+@Serializable
+data class UserDTO(val id: Int, val name: String, val age: Int, val email: String)
+
+val client = HttpClient(CIO) {
+    install(ContentNegotiation) {
+        json(Json {
+            prettyPrint = true
+            isLenient = true
+        })
+    }
+}
+
+fun main() {
     val scanner = Scanner(System.`in`)
     var exit = false
 
@@ -13,13 +36,20 @@ fun main(args: Array<String>) {
         println("4. Update user by id")
         println("5. Delete user by id")
         println("6. Exit")
+        val option: String = scanner.nextLine()
+        println("Option: $option")
 
-        when (scanner.nextLine().trim()) {
+        when (option) {
             "1" -> getUsers()
             "2" -> {
                 println("Enter the id you want to search: ")
-                val id = scanner.nextLine().trim().toIntOrNull() != (null ?: return println("Invalid id"))
-                getUserById(id)
+                val id = scanner.nextLine().trim().toIntOrNull()
+
+                if (id != null) {
+                    getUserById(id)
+                } else {
+                    println("Invalid id")
+                }
             }
 
             "3" -> {
@@ -68,8 +98,13 @@ fun main(args: Array<String>) {
 
             "5" -> {
                 println("Enter the id you want to delete: ")
-                val id = scanner.nextLine().trim().toIntOrNull() != (null ?: return println("Invalid id"))
-                deleteUser(id)
+                val id = scanner.nextLine().trim().toIntOrNull()
+
+                if (id != null) {
+                    deleteUser(id)
+                } else {
+                    println("Invalid id")
+                }
             }
 
             "6" -> exit = true
@@ -78,9 +113,55 @@ fun main(args: Array<String>) {
         }
         scanner.close()
     }
+}
 
+fun getUsers() = runBlocking {
+    try {
+        val users: List<UserDTO> = client.get("http://localhost:8080/user").body()
+        println(users)
+    } catch (e: Exception) {
+        println("Error fetching users, error: ${e.message}")
+    }
+}
 
-    // Try adding program arguments via Run/Debug configuration.
-    // Learn more about running applications: https://www.jetbrains.com/help/idea/running-applications.html.
-    println("Program arguments: ${args.joinToString()}")
+fun getUserById(id: Int) = runBlocking {
+    try {
+        val user: List<UserDTO> = client.get("http://localhost:8080/user/$id").body()
+        println(user)
+    } catch (e: Exception) {
+        println("Error fetching user, error: ${e.message}")
+    }
+}
+
+fun addUser(user: UserDTO) = runBlocking {
+    try {
+        val response: String = client.post("http://localhost:8080/user") {
+            contentType(ContentType.Application.Json)
+            setBody(user)
+        }.body()
+        println(response)
+    } catch (e: Exception) {
+        println("Error adding user, error: ${e.message}")
+    }
+}
+
+fun updateUser(id: Int, user: UserDTO) = runBlocking {
+    try {
+        val response: String = client.patch("http://localhost:8080/user/$id") {
+            contentType(ContentType.Application.Json)
+            setBody(user)
+        }.body()
+        println(response)
+    } catch (e: Exception) {
+        println("Error updating user, error: ${e.message}")
+    }
+}
+
+fun deleteUser(id: Int) = runBlocking {
+    try {
+        val response: String = client.delete("http://localhost:8080/user/$id").body()
+        println(response)
+    } catch (e: Exception) {
+        println("Error deleting user, error: ${e.message}")
+    }
 }
