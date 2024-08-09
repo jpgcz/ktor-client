@@ -3,6 +3,7 @@ import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
@@ -37,10 +38,15 @@ fun main() {
         println("5. Delete user by id")
         println("6. Exit")
         val option: String = scanner.nextLine()
-        println("Option: $option")
 
         when (option) {
-            "1" -> getUsers()
+            "1" -> {
+                try {
+                    getUsers()
+                } catch (e: Exception) {
+                    println("Error fetching users ${e.message}")
+                }
+            }
             "2" -> {
                 println("Enter the id you want to search: ")
                 val id = scanner.nextLine().trim().toIntOrNull()
@@ -111,13 +117,16 @@ fun main() {
 
             else -> println("Invalid option")
         }
-        scanner.close()
+        //scanner.close()
     }
 }
 
 fun getUsers() = runBlocking {
     try {
-        val users: List<UserDTO> = client.get("http://localhost:8080/user").body()
+        val response: HttpResponse = client.get("http://localhost:8080/user"){
+            header(HttpHeaders.Accept, ContentType.Application.Json)
+        }
+        val users: String = response.bodyAsText()
         println(users)
     } catch (e: Exception) {
         println("Error fetching users, error: ${e.message}")
@@ -126,7 +135,10 @@ fun getUsers() = runBlocking {
 
 fun getUserById(id: Int) = runBlocking {
     try {
-        val user: List<UserDTO> = client.get("http://localhost:8080/user/$id").body()
+        val response: HttpResponse = client.get("http://localhost:8080/user/$id"){
+            header(HttpHeaders.Accept, ContentType.Application.Json)
+        }
+        val user: String = response.bodyAsText()
         println(user)
     } catch (e: Exception) {
         println("Error fetching user, error: ${e.message}")
