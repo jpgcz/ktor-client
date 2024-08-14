@@ -128,8 +128,10 @@ fun getUsers() = runBlocking {
         }
         val users: String = response.bodyAsText()
         println(users)
+        return@runBlocking users
     } catch (e: Exception) {
         println("Error fetching users, error: ${e.message}")
+        return@runBlocking "Error fetching users, error: ${e.message}"
     }
 }
 
